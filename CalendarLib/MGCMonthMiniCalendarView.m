@@ -168,7 +168,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	//CGSize viewSize = CGSizeMake(numCols * dayCellSize + (numCols - 1) * space, numRows * dayCellSize + (numRows - 1) * space);
 	CGSize viewSize = CGSizeMake(width, numRows * dayWidth);
 	
-	if (self.self.showsDayHeader) {
+	if (self.showsDayHeader) {
 		viewSize.height += dayCellSize + space;
 	}
 	
@@ -201,6 +201,12 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	para.lineBreakMode = NSLineBreakByCharWrapping;
 	
 	return [[NSMutableAttributedString alloc]initWithString:s attributes:@{ NSFontAttributeName: font, NSForegroundColorAttributeName: color, NSParagraphStyleAttributeName: para }];
+}
+
+- (NSDate *)dateForDayAtIndex:(NSUInteger)index {
+	NSDateComponents *comp = [self.calendar components:(NSCalendarUnitMonth | NSCalendarUnitYear) fromDate:self.date];
+	comp.day = index;
+	return [self.calendar dateFromComponents:comp];
 }
 
 #pragma mark - UIView
@@ -279,20 +285,20 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		UIColor *bkgColor = nil;
 		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:backgroundColorForDayAtIndex:)]) {
 			bkgColor = [self.delegate monthMiniCalendarView:self backgroundColorForDayAtIndex:i];
+			if (bkgColor != nil) {
+				[bkgColor setFill];
+				UIRectFill(boxRect);
+			}
 		}
 		
-		//bkgColor = [UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.4];
-		if (bkgColor)
-		{
-			[bkgColor setFill];
-			UIRectFill(boxRect);
-		}
-		
-		if ([self.highlightedDays containsIndex:i])
-		{
-			UIBezierPath* p = [UIBezierPath bezierPathWithOvalInRect:boxRect];
-			[self.highlightColor setFill];
-			[p fill];
+		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:cellBezierPathForDate:dayCellRect:)]) {
+			NSDate *date = [self dateForDayAtIndex:i];
+			UIBezierPath *path = [self.delegate monthMiniCalendarView:self cellBezierPathForDate:date dayCellRect:boxRect];
+			if (path != nil) {
+				UIColor *pathColor = [self.delegate monthMiniCalendarView:self highlightColorForDate:date];
+				[pathColor setFill];
+				[path fill];
+			}
 		}
 		
 		NSMutableAttributedString *as = [self textForDayAtIndex:i cellColor:bkgColor];
@@ -300,7 +306,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		CGSize size = [as size];
 		
 		CGRect textRect = CGRectMake(cellRect.origin.x + floorf((cellRect.size.width - size.width) / 2),
-									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2),
+									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2 - 1),
 									 size.width,
 									 size.height);
 		

@@ -62,5 +62,7 @@
 @optional
 
 - (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view backgroundColorForDayAtIndex:(NSUInteger)index;
+- (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view highlightColorForDate:(NSDate*)date;
+- (UIBezierPath *)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect)rect;
 
 @end

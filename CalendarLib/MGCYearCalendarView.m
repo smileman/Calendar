@@ -426,10 +426,10 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 	
 	cell.calendarView.calendar = self.calendar;
 	cell.calendarView.date = date;
+	cell.calendarView.showsDayHeader = NO;
 	cell.calendarView.daysFont = self.daysFont;
 	cell.calendarView.delegate = self;
 	cell.calendarView.headerText = [self headerTextForMonthAtIndexPath:indexPath];
-	cell.calendarView.backgroundColor = [UIColor colorWithRed:0 green:1.0 blue:0 alpha:0.2];
 	
 	cell.calendarView.highlightedDays = nil;
 	if ([self.calendar mgc_isDate:date sameMonthAsDate:[NSDate date]])
@@ -494,23 +494,37 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
 	CGFloat cellWidth = (collectionView.frame.size.width - 2 * kDefaultCollectionViewInset - kCellMinimumSpacing * (kDefaultColumnsCount - 1)) / kDefaultColumnsCount;
-	//CGFloat cellHeight = self.layout.itemSize.height;
+	
+	NSDate *date = [self dateForIndexPath:indexPath];
 	
 	MGCMonthMiniCalendarView *cal = [MGCMonthMiniCalendarView new];
 	cal.calendar = self.calendar;
 	cal.daysFont = self.daysFont;
+	cal.showsDayHeader = NO;
+	cal.date = date;
 	cal.headerText = [self headerTextForMonthAtIndexPath:indexPath];
-	CGSize cellSize =  [cal preferredHeightForWidth:cellWidth yearWise:NO];
-	
+	CGSize cellSize =  [cal preferredHeightForWidth:cellWidth yearWise:YES];
+	cellSize.width = floor(cellSize.width);
+	cellSize.height = floor(cellSize.height);
 	
 	return cellSize;
 }
 
 #pragma mark - MonthCalendarDelegate
 
-//- (UIColor*)monthCalendar:(MonthCalendar*)calendar backgroundColorForDayAtIndex:(NSUInteger)index
-//{
-//	return [UIColor yellowColor];
-//}
+- (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view highlightColorForDate:(NSDate*)date {
+	if ([self.delegate respondsToSelector:@selector(calendarYearView:highlightColorForDate:)]) {
+		return [self.delegate calendarYearView:self highlightColorForDate:date];
+	}
+	return nil;
+	
+}
+
+- (UIBezierPath *)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect) rect {
+	if ([self.delegate respondsToSelector:@selector(calendarYearView:highlightColorForDate:)]) {
+		return [self.delegate calendarYearView:self cellBezierPathForDate:date dayCellRect:rect];
+	}
+	return nil;
+}
 
 @end

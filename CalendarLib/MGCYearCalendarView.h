@@ -119,4 +119,8 @@
 - (void)calendarYearViewDidScroll:(MGCYearCalendarView*)view;
 - (void)calendarYearView:(MGCYearCalendarView*)view didSelectMonthAtDate:(NSDate*)date;
 
+- (UIColor*)calendarYearView:(MGCYearCalendarView*)view backgroundColorForDate:(NSDate*)date;
+- (UIColor*)calendarYearView:(MGCYearCalendarView*)view highlightColorForDate:(NSDate*)date;
+- (UIBezierPath *)calendarYearView:(MGCYearCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect)rect;
+
 @end
