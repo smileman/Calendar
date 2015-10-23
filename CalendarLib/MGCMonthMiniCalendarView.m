@@ -32,7 +32,8 @@
 #import "NSCalendar+MGCAdditions.h"
 
 
-static const CGFloat kMonthMargin = 5;
+//static const CGFloat kMonthMargin = 5;
+static const CGFloat kMonthMargin = 0;
 static const CGFloat kDefaultDayFontSize = 13;
 static const CGFloat kDefaultHeaderFontSize = 16;
 
@@ -148,6 +149,40 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	return viewSize;
 }
 
+- (CGSize)preferredHeightForWidth:(CGFloat)width yearWise:(BOOL)yearWise
+{
+	CGSize textSize = [@"00" sizeWithAttributes:@{ NSFontAttributeName:self.daysFont }];
+	CGFloat dayCellSize = MAX(textSize.width, textSize.height);
+	CGFloat space = dayCellSize / 2.;
+	
+	NSUInteger numCols = self.dayLabels.count;
+	
+	CGFloat dayWidth = width / numCols;
+	
+	NSUInteger numRows = self.showsDayHeader ? 1 : 0;
+	if (yearWise)
+		numRows += [self.calendar maximumRangeOfUnit:NSWeekOfMonthCalendarUnit].length;
+	else
+		numRows += [self.calendar rangeOfUnit:NSWeekCalendarUnit inUnit:NSMonthCalendarUnit forDate:self.date].length;
+	
+	//CGSize viewSize = CGSizeMake(numCols * dayCellSize + (numCols - 1) * space, numRows * dayCellSize + (numRows - 1) * space);
+	CGSize viewSize = CGSizeMake(width, numRows * dayWidth);
+	
+	if (self.self.showsDayHeader) {
+		viewSize.height += dayCellSize + space;
+	}
+	
+	if (self.showsMonthHeader)
+	{
+		CGRect headerRect = [self.headerText boundingRectWithSize:CGSizeMake(viewSize.width, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:nil];
+		viewSize.height += headerRect.size.height + space;
+	}
+	
+	viewSize.height += 2 * kMonthMargin;
+	viewSize.width += 2 * kMonthMargin;
+	return viewSize;
+}
+
 - (NSMutableAttributedString*)textForDayAtIndex:(NSUInteger)index cellColor:(UIColor*)cellColor
 {
 	NSString *s = [NSString stringWithFormat:@"%lu", (unsigned long)index];
@@ -178,13 +213,12 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 - (void)drawRect:(CGRect)rect
 {
 	// calc sizes
-	CGSize daySize = [@"00" sizeWithAttributes:@{ NSFontAttributeName:self.daysFont }];
-	CGFloat dayCellSize = MAX(daySize.width, daySize.height);
-	CGFloat space = dayCellSize / 2.;
+	CGSize dayLabelSize = [@"00" sizeWithAttributes:@{ NSFontAttributeName:self.daysFont }];
+	CGFloat dayLabelCellSize = MAX(dayLabelSize.width, dayLabelSize.height);
+	CGFloat space = dayLabelCellSize / 2.;
 
 	rect = CGRectInset(rect, kMonthMargin, kMonthMargin);
 
-	
 	// draw month header
 	if (self.showsMonthHeader)
 	{
@@ -197,6 +231,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	
 	CGFloat x = rect.origin.x, y = rect.origin.y;
 	
+	CGFloat dayCellSize = rect.size.width / self.dayLabels.count;
 	
 	// draw days header
 	if (self.showsDayHeader)
@@ -208,12 +243,12 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		for (int i = 0; i < self.dayLabels.count; i++)
 		{
 			NSString *s = [self.dayLabels objectAtIndex:i];
-			CGRect cellRect = CGRectMake(x, rect.origin.y, dayCellSize, dayCellSize);
+			CGRect cellRect = CGRectMake(x, rect.origin.y, dayCellSize, dayLabelCellSize);
 			[s drawInRect:cellRect withAttributes:@{ NSFontAttributeName:self.daysFont, NSParagraphStyleAttributeName:para }];
-			x += dayCellSize + space;
+			x += dayCellSize;
 		}
 		
-		y += dayCellSize;
+		y += dayLabelCellSize;
 		
 		UIBezierPath *line = [UIBezierPath bezierPathWithRect:CGRectMake(rect.origin.x, y + 2., rect.size.width, .1)];
 		[line fill];
@@ -227,7 +262,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	NSUInteger days = [self.calendar rangeOfUnit:NSDayCalendarUnit inUnit:NSMonthCalendarUnit forDate:firstDayInMonth].length;
 	NSUInteger firstCol = [self firstDayColumn];
 	
-	x = rect.origin.x + firstCol * (dayCellSize + space);
+	x = rect.origin.x + firstCol * dayCellSize;
 	
 	for (NSUInteger i = 1, col = firstCol; i <= days; i++, col++)
 	{
@@ -235,16 +270,18 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		{
 			col = 0;
 			x = rect.origin.x;
-			y += dayCellSize + space;
+			y += dayCellSize;
 		}
 		
 		CGRect cellRect = CGRectMake(x, y, dayCellSize, dayCellSize);
-		CGRect boxRect = CGRectInset(cellRect, -space / 2 + 1, -space / 2 + 1);
+		CGRect boxRect = cellRect;
 		
 		UIColor *bkgColor = nil;
-		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:backgroundColorForDayAtIndex:)])
+		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:backgroundColorForDayAtIndex:)]) {
 			bkgColor = [self.delegate monthMiniCalendarView:self backgroundColorForDayAtIndex:i];
+		}
 		
+		//bkgColor = [UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.4];
 		if (bkgColor)
 		{
 			[bkgColor setFill];
@@ -259,9 +296,17 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		}
 		
 		NSMutableAttributedString *as = [self textForDayAtIndex:i cellColor:bkgColor];
-		[as drawInRect:cellRect];
 		
-		x += cellRect.size.width + space;
+		CGSize size = [as size];
+		
+		CGRect textRect = CGRectMake(cellRect.origin.x + floorf((cellRect.size.width - size.width) / 2),
+									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2),
+									 size.width,
+									 size.height);
+		
+		[as drawInRect:textRect];
+		
+		x += cellRect.size.width;
 	}
 }
 

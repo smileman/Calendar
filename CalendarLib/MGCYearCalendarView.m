@@ -40,10 +40,13 @@ static NSString* const MonthCellReuseIdentifier = @"MonthCellReuseIdentifier";
 static NSString* const YearHeaderReuseIdentifier = @"YearHeaderReuseIdentifier";
 
 static const NSUInteger kYearsLoadingStep = 10;			// number of years in a loaded page = 2 * kYearsLoadingStep  + 1
-static const CGFloat kCellMinimumSpacing = 25;			// minimum distance between month cells
+static const CGFloat kCellMinimumSpacing = 10;			// minimum distance between month cells
 static const CGFloat kDefaultDayFontSize = 13;			// default font size for the day ordinals
 static const CGFloat kDefaultMonthHeaderFontSize = 20;	// default font size for the month headers
 static const CGFloat kDefaultYearHeaderFontSize = 40;	// deafult font size for the year headers
+
+static const CGFloat kDefaultCollectionViewInset = 10;	// deafult font size for the year headers
+static const int kDefaultColumnsCount = 3;	// deafult font size for the year headers
 
 
 // forward declaration needed by YearEventsView
@@ -358,7 +361,7 @@ static const CGFloat kDefaultYearHeaderFontSize = 40;	// deafult font size for t
 		_eventsView.delegate = self;
 		_eventsView.showsVerticalScrollIndicator = NO;
 		_eventsView.scrollsToTop = NO;
-		_eventsView.contentInset = UIEdgeInsetsMake(0, 60, 0, 60);
+		_eventsView.contentInset = UIEdgeInsetsMake(0, kDefaultCollectionViewInset, 0, kDefaultCollectionViewInset);
 
 		[_eventsView registerClass:MGCYearCalendarMonthCell.class forCellWithReuseIdentifier:MonthCellReuseIdentifier];
 		[_eventsView registerClass:MGCYearCalendarMonthHeaderView.class forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:YearHeaderReuseIdentifier];
@@ -426,6 +429,7 @@ static const CGFloat kDefaultYearHeaderFontSize = 40;	// deafult font size for t
 	cell.calendarView.daysFont = self.daysFont;
 	cell.calendarView.delegate = self;
 	cell.calendarView.headerText = [self headerTextForMonthAtIndexPath:indexPath];
+	cell.calendarView.backgroundColor = [UIColor colorWithRed:0 green:1.0 blue:0 alpha:0.2];
 	
 	cell.calendarView.highlightedDays = nil;
 	if ([self.calendar mgc_isDate:date sameMonthAsDate:[NSDate date]])
@@ -486,6 +490,20 @@ static const CGFloat kDefaultYearHeaderFontSize = 40;	// deafult font size for t
 		NSDate *date = [self dateForIndexPath:indexPath];
 		[self.delegate calendarYearView:self didSelectMonthAtDate:date];
 	}
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
+	CGFloat cellWidth = (collectionView.frame.size.width - 2 * kDefaultCollectionViewInset - kCellMinimumSpacing * (kDefaultColumnsCount - 1)) / kDefaultColumnsCount;
+	//CGFloat cellHeight = self.layout.itemSize.height;
+	
+	MGCMonthMiniCalendarView *cal = [MGCMonthMiniCalendarView new];
+	cal.calendar = self.calendar;
+	cal.daysFont = self.daysFont;
+	cal.headerText = [self headerTextForMonthAtIndexPath:indexPath];
+	CGSize cellSize =  [cal preferredHeightForWidth:cellWidth yearWise:NO];
+	
+	
+	return cellSize;
 }
 
 #pragma mark - MonthCalendarDelegate

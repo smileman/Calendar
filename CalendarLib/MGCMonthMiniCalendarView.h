@@ -52,6 +52,8 @@
 // according to the maximum number of weeks per month in a year.
 - (CGSize)preferredSizeYearWise:(BOOL)yearWise;
 
+- (CGSize)preferredHeightForWidth:(CGFloat)width yearWise:(BOOL)yearWise;
+
 @end
 
 
