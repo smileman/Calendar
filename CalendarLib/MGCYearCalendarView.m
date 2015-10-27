@@ -361,7 +361,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 		_eventsView.delegate = self;
 		_eventsView.showsVerticalScrollIndicator = NO;
 		_eventsView.scrollsToTop = NO;
-		_eventsView.contentInset = UIEdgeInsetsMake(0, kDefaultCollectionViewInset, 0, kDefaultCollectionViewInset);
+		_eventsView.contentInset = UIEdgeInsetsMake(self.contentTopInset, kDefaultCollectionViewInset, 0, kDefaultCollectionViewInset);
 
 		[_eventsView registerClass:MGCYearCalendarMonthCell.class forCellWithReuseIdentifier:MonthCellReuseIdentifier];
 		[_eventsView registerClass:MGCYearCalendarMonthHeaderView.class forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:YearHeaderReuseIdentifier];
@@ -382,7 +382,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 	CGSize cellSize =  [cal preferredSizeYearWise:YES];
 
 	self.layout.itemSize = cellSize;
-	self.layout.sectionInset = UIEdgeInsetsMake(10, 0, 50, 0);
+	self.layout.sectionInset = UIEdgeInsetsMake(10, 0, 16, 0);
 	self.layout.minimumInteritemSpacing = kCellMinimumSpacing;
 	self.layout.minimumLineSpacing = kCellMinimumSpacing;
 	
@@ -493,7 +493,12 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 }
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
-	CGFloat cellWidth = (collectionView.frame.size.width - 2 * kDefaultCollectionViewInset - kCellMinimumSpacing * (kDefaultColumnsCount - 1)) / kDefaultColumnsCount;
+	CGFloat cellWidth;
+	if ([self.delegate respondsToSelector:@selector(calendarYearView:widthForCellAtIndexPath:)]) {
+		cellWidth = [self.delegate calendarYearView:self widthForCellAtIndexPath:indexPath];
+	} else {
+		cellWidth = (collectionView.frame.size.width - 2 * kDefaultCollectionViewInset - kCellMinimumSpacing * (kDefaultColumnsCount - 1)) / kDefaultColumnsCount;
+	}
 	
 	NSDate *date = [self dateForIndexPath:indexPath];
 	
@@ -523,6 +528,13 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 - (UIBezierPath *)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect) rect {
 	if ([self.delegate respondsToSelector:@selector(calendarYearView:highlightColorForDate:)]) {
 		return [self.delegate calendarYearView:self cellBezierPathForDate:date dayCellRect:rect];
+	}
+	return nil;
+}
+
+- (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view dayTextColorForDate:(NSDate*)date {
+	if ([self.delegate respondsToSelector:@selector(calendarYearView:dayTextColorForDate:)]) {
+		return [self.delegate calendarYearView:self dayTextColorForDate:date];
 	}
 	return nil;
 }

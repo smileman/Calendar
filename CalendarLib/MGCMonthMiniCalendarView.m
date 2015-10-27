@@ -59,6 +59,9 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		_date = [NSDate date];
 		_dateFormatter = [NSDateFormatter new];
 		_dateFormatter.dateFormat = @"MMMM yyyy";
+		_dateFormatter.calendar = _calendar;
+		_dateFormatter.timeZone = _calendar.timeZone;
+		_dateFormatter.locale = _calendar.locale;
 		_daysFont = [UIFont systemFontOfSize:kDefaultDayFontSize];
 		_highlightColor = [UIColor blackColor];
 		_showsDayHeader = YES;
@@ -75,7 +78,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 {
 	if (_dayLabels == nil)
 	{
-		NSArray *symbols = self.dateFormatter.veryShortStandaloneWeekdaySymbols;
+		NSArray *symbols = self.dateFormatter.shortStandaloneWeekdaySymbols;
 		
 		NSMutableArray *labels = [NSMutableArray array];
 		for (int i = 0; i < symbols.count; i++)
@@ -95,6 +98,8 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 {
 	_calendar = [calendar copy];
 	self.dateFormatter.calendar = calendar;
+	self.dateFormatter.timeZone = calendar.timeZone;
+	self.dateFormatter.locale = calendar.locale;
 }
 
 - (NSAttributedString*)headerText
@@ -183,11 +188,18 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	return viewSize;
 }
 
-- (NSMutableAttributedString*)textForDayAtIndex:(NSUInteger)index cellColor:(UIColor*)cellColor
+- (NSMutableAttributedString*)textForDayAtIndex:(NSUInteger)index date:(NSDate *)date cellColor:(UIColor*)cellColor
 {
 	NSString *s = [NSString stringWithFormat:@"%lu", (unsigned long)index];
 	
-	UIColor *color = [UIColor blackColor];
+	UIColor *color = nil;
+	if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:dayTextColorForDate:)]) {
+		color = [self.delegate monthMiniCalendarView:self dayTextColorForDate:date];
+	}
+	if (color == nil) {
+		color = [UIColor blackColor];
+	}
+	
 	UIFont *font = self.daysFont;
 	
 	if ([self.highlightedDays containsIndex:index] || cellColor != nil)
@@ -291,8 +303,8 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 			}
 		}
 		
+		NSDate *date = [self dateForDayAtIndex:i];
 		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:cellBezierPathForDate:dayCellRect:)]) {
-			NSDate *date = [self dateForDayAtIndex:i];
 			UIBezierPath *path = [self.delegate monthMiniCalendarView:self cellBezierPathForDate:date dayCellRect:boxRect];
 			if (path != nil) {
 				UIColor *pathColor = [self.delegate monthMiniCalendarView:self highlightColorForDate:date];
@@ -301,14 +313,19 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 			}
 		}
 		
-		NSMutableAttributedString *as = [self textForDayAtIndex:i cellColor:bkgColor];
+		NSMutableAttributedString *as = [self textForDayAtIndex:i date:date cellColor:bkgColor];
 		
 		CGSize size = [as size];
 		
 		CGRect textRect = CGRectMake(cellRect.origin.x + floorf((cellRect.size.width - size.width) / 2),
-									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2 - 1),
+									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2),
 									 size.width,
 									 size.height);
+		//textRect = CGRectIntegral(textRect);
+		
+//		UIColor *greenColor = [UIColor greenColor];
+//		[greenColor setFill];
+//		UIRectFill(textRect);
 		
 		[as drawInRect:textRect];
 		

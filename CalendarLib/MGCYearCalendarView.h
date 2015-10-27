@@ -89,6 +89,12 @@
  */
 @property (nonatomic, copy) MGCDateRange *dateRange;
 
+/*!
+	@property	contentTopInset
+	@discussion calendar collection view top inset.
+ */
+@property (nonatomic, assign) CGFloat contentTopInset;
+
 
 - (NSDate*)dateForMonthAtPoint:(CGPoint)pt;
 
@@ -122,5 +128,7 @@
 - (UIColor*)calendarYearView:(MGCYearCalendarView*)view backgroundColorForDate:(NSDate*)date;
 - (UIColor*)calendarYearView:(MGCYearCalendarView*)view highlightColorForDate:(NSDate*)date;
 - (UIBezierPath *)calendarYearView:(MGCYearCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect)rect;
+- (UIColor*)calendarYearView:(MGCYearCalendarView*)view dayTextColorForDate:(NSDate*)date;
+- (CGFloat)calendarYearView:(MGCYearCalendarView*)view widthForCellAtIndexPath:(NSIndexPath *)indexPath;
 
 @end
