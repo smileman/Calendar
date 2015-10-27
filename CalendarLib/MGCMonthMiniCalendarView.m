@@ -247,9 +247,10 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		rect.size.height -= headerRect.size.height + space;
 	}
 	
-	CGFloat x = rect.origin.x, y = rect.origin.y;
+	CGFloat dayCellSize = ((int)rect.size.width) / self.dayLabels.count;
 	
-	CGFloat dayCellSize = rect.size.width / self.dayLabels.count;
+	CGFloat x = rect.origin.x;
+	CGFloat y = (int) rect.origin.y;
 	
 	// draw days header
 	if (self.showsDayHeader)
@@ -280,6 +281,8 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 	NSUInteger days = [self.calendar rangeOfUnit:NSDayCalendarUnit inUnit:NSMonthCalendarUnit forDate:firstDayInMonth].length;
 	NSUInteger firstCol = [self firstDayColumn];
 	
+	
+	
 	x = rect.origin.x + firstCol * dayCellSize;
 	
 	for (NSUInteger i = 1, col = firstCol; i <= days; i++, col++)
@@ -292,6 +295,7 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		}
 		
 		CGRect cellRect = CGRectMake(x, y, dayCellSize, dayCellSize);
+		
 		CGRect boxRect = cellRect;
 		
 		UIColor *bkgColor = nil;
@@ -321,9 +325,9 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 									 cellRect.origin.y + floorf((cellRect.size.height - size.height) / 2),
 									 size.width,
 									 size.height);
-		//textRect = CGRectIntegral(textRect);
+		textRect = CGRectIntegral(textRect);
 		
-//		UIColor *greenColor = [UIColor greenColor];
+//		UIColor *greenColor = [UIColor blueColor];
 //		[greenColor setFill];
 //		UIRectFill(textRect);
 		
