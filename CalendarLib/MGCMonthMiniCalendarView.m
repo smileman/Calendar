@@ -308,13 +308,8 @@ static const CGFloat kDefaultHeaderFontSize = 16;
 		}
 		
 		NSDate *date = [self dateForDayAtIndex:i];
-		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:cellBezierPathForDate:dayCellRect:)]) {
-			UIBezierPath *path = [self.delegate monthMiniCalendarView:self cellBezierPathForDate:date dayCellRect:boxRect];
-			if (path != nil) {
-				UIColor *pathColor = [self.delegate monthMiniCalendarView:self highlightColorForDate:date];
-				[pathColor setFill];
-				[path fill];
-			}
+		if ([self.delegate respondsToSelector:@selector(monthMiniCalendarView:drawDayCellOnDate:dayCellRect:)]) {
+			[self.delegate monthMiniCalendarView:self drawDayCellOnDate:date dayCellRect:boxRect];
 		}
 		
 		NSMutableAttributedString *as = [self textForDayAtIndex:i date:date cellColor:bkgColor];

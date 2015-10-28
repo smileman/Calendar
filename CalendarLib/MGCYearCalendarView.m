@@ -517,26 +517,17 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 
 #pragma mark - MonthCalendarDelegate
 
-- (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view highlightColorForDate:(NSDate*)date {
-	if ([self.delegate respondsToSelector:@selector(calendarYearView:highlightColorForDate:)]) {
-		return [self.delegate calendarYearView:self highlightColorForDate:date];
-	}
-	return nil;
-	
-}
-
-- (UIBezierPath *)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view cellBezierPathForDate:(NSDate*)date dayCellRect:(CGRect) rect {
-	if ([self.delegate respondsToSelector:@selector(calendarYearView:highlightColorForDate:)]) {
-		return [self.delegate calendarYearView:self cellBezierPathForDate:date dayCellRect:rect];
-	}
-	return nil;
-}
-
 - (UIColor*)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view dayTextColorForDate:(NSDate*)date {
 	if ([self.delegate respondsToSelector:@selector(calendarYearView:dayTextColorForDate:)]) {
 		return [self.delegate calendarYearView:self dayTextColorForDate:date];
 	}
 	return nil;
+}
+
+- (void)monthMiniCalendarView:(MGCMonthMiniCalendarView*)view drawDayCellOnDate:(NSDate*)date dayCellRect:(CGRect)rect {
+	if ([self.delegate respondsToSelector:@selector(calendarYearView:drawDayCellWithDate:dayCellRect:)]) {
+		[self.delegate calendarYearView:self drawDayCellWithDate:date dayCellRect:rect];
+	}
 }
 
 @end
