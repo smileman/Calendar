@@ -77,6 +77,86 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 
 @end
 
+@interface CustomLayout : UICollectionViewFlowLayout
+
+@end
+
+@implementation CustomLayout
+
+- (NSArray *) layoutAttributesForElementsInRect:(CGRect)rect {
+	
+	NSMutableArray *answer = [[super layoutAttributesForElementsInRect:rect] mutableCopy];
+	UICollectionView * const cv = self.collectionView;
+	CGPoint const contentOffset = cv.contentOffset;
+	
+	NSMutableIndexSet *missingSections = [NSMutableIndexSet indexSet];
+	for (UICollectionViewLayoutAttributes *layoutAttributes in answer) {
+		if (layoutAttributes.representedElementCategory == UICollectionElementCategoryCell) {
+			[missingSections addIndex:layoutAttributes.indexPath.section];
+		}
+	}
+	for (UICollectionViewLayoutAttributes *layoutAttributes in answer) {
+		if ([layoutAttributes.representedElementKind isEqualToString:UICollectionElementKindSectionHeader]) {
+			[missingSections removeIndex:layoutAttributes.indexPath.section];
+		}
+	}
+	
+	[missingSections enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+		
+		NSIndexPath *indexPath = [NSIndexPath indexPathForItem:0 inSection:idx];
+		
+		UICollectionViewLayoutAttributes *layoutAttributes = [self layoutAttributesForSupplementaryViewOfKind:UICollectionElementKindSectionHeader atIndexPath:indexPath];
+		
+		[answer addObject:layoutAttributes];
+		
+	}];
+	
+	for (UICollectionViewLayoutAttributes *layoutAttributes in answer) {
+		
+		if ([layoutAttributes.representedElementKind isEqualToString:UICollectionElementKindSectionHeader]) {
+			
+			NSInteger section = layoutAttributes.indexPath.section;
+			NSInteger numberOfItemsInSection = [cv numberOfItemsInSection:section];
+			
+			NSIndexPath *firstCellIndexPath = [NSIndexPath indexPathForItem:0 inSection:section];
+			NSIndexPath *lastCellIndexPath = [NSIndexPath indexPathForItem:MAX(0, (numberOfItemsInSection - 1)) inSection:section];
+			
+			UICollectionViewLayoutAttributes *firstCellAttrs = [self layoutAttributesForItemAtIndexPath:firstCellIndexPath];
+			UICollectionViewLayoutAttributes *lastCellAttrs = [self layoutAttributesForItemAtIndexPath:lastCellIndexPath];
+			
+			CGFloat headerHeight = CGRectGetHeight(layoutAttributes.frame);
+			CGPoint origin = layoutAttributes.frame.origin;
+			origin.y = MIN(
+						   MAX(
+							   contentOffset.y,
+							   (CGRectGetMinY(firstCellAttrs.frame) - headerHeight)
+							   ),
+						   (CGRectGetMaxY(lastCellAttrs.frame) - headerHeight)
+						   );
+			
+			layoutAttributes.zIndex = 1024;
+			layoutAttributes.frame = (CGRect){
+				.origin = origin,
+				.size = layoutAttributes.frame.size
+			};
+			
+		}
+		
+	}
+	
+	return answer;
+	
+}
+
+- (BOOL) shouldInvalidateLayoutForBoundsChange:(CGRect)newBound {
+	
+	return YES;
+	
+}
+
+@end
+
+
 
 #pragma mark -
 
@@ -86,6 +166,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 @property (nonatomic, copy) NSDate *startDate;					// first loaded day in the views (always set to the first day of the year)
 @property (nonatomic) NSDate *maxStartDate;						// maximum date for the start of a loaded page of the collection view - set with dateRange, nil for infinite scrolling
 @property (nonatomic) NSDateFormatter *dateFormatter;			// used to format month and year headers
+@property (nonatomic, strong) NSIndexPath *indexPathForCurrentMonth;
 
 @end
 
@@ -166,7 +247,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 		self.maxStartDate = _dateRange.start;
 	
 	// adjust startDate if not in new range
-	if (![_dateRange containsDate:self.startDate])
+	//if (![_dateRange containsDate:self.startDate])
 		self.startDate = _dateRange.start;
 	
 	// reload ?
@@ -278,6 +359,18 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 
 #pragma mark - Scrolling
 
+- (void)scrollToCurrentMonth {
+	if (!self.indexPathForCurrentMonth) { return; }
+	
+	[self.eventsView scrollToItemAtIndexPath:self.indexPathForCurrentMonth atScrollPosition:UICollectionViewScrollPositionCenteredVertically animated:YES];
+	
+	if ([self.delegate respondsToSelector:@selector(calendarYearViewDidScroll:)])
+	{
+		[self.delegate calendarYearViewDidScroll:self];
+	}
+}
+
+
 // adjusts startDate by offsetting date by given years within calendar date range.
 // returns the distance in years between date and new start.
 - (NSUInteger)adjustStartDate:(NSDate*)date byNumberOfYears:(NSInteger)years
@@ -351,7 +444,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 {
 	if (!_eventsView)
 	{
-		UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
+		CustomLayout *layout = [CustomLayout new];
 		layout.scrollDirection = UICollectionViewScrollDirectionVertical;
 				
 		_eventsView = [[YearEventsView alloc]initWithFrame:CGRectNull collectionViewLayout:layout];
@@ -361,7 +454,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 		_eventsView.delegate = self;
 		_eventsView.showsVerticalScrollIndicator = NO;
 		_eventsView.scrollsToTop = NO;
-		_eventsView.contentInset = UIEdgeInsetsMake(self.contentTopInset, kDefaultCollectionViewInset, 0, kDefaultCollectionViewInset);
+		_eventsView.contentInset = UIEdgeInsetsMake(self.contentTopInset, self.contentHorizontalInset, 0, self.contentHorizontalInset);
 
 		[_eventsView registerClass:MGCYearCalendarMonthCell.class forCellWithReuseIdentifier:MonthCellReuseIdentifier];
 		[_eventsView registerClass:MGCYearCalendarMonthHeaderView.class forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:YearHeaderReuseIdentifier];
@@ -383,8 +476,8 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 
 	self.layout.itemSize = cellSize;
 	self.layout.sectionInset = UIEdgeInsetsMake(10, 0, 16, 0);
-	self.layout.minimumInteritemSpacing = kCellMinimumSpacing;
-	self.layout.minimumLineSpacing = kCellMinimumSpacing;
+	self.layout.minimumInteritemSpacing = self.minimumInterItemSpacing;
+	self.layout.minimumLineSpacing = self.minimumInterLineSpacing;
 	
 	self.layout.headerReferenceSize = CGSizeMake(self.bounds.size.width, 60);
 	if ([self.delegate respondsToSelector:@selector(heightForYearHeaderInCalendarYearView:)])
@@ -450,6 +543,7 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
     if (kind == UICollectionElementKindSectionHeader)
 	{
 		MGCYearCalendarMonthHeaderView *headerView = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:YearHeaderReuseIdentifier forIndexPath:indexPath];
+		headerView.backgroundColor = [UIColor whiteColor];
 		
 		NSDate *date = [self dateForIndexPath:indexPath];
 		if ([self.delegate respondsToSelector:@selector(calendarYearView:headerTextForYearAtDate:)])
@@ -501,6 +595,9 @@ static const int kDefaultColumnsCount = 3;	// deafult font size for the year hea
 	}
 	
 	NSDate *date = [self dateForIndexPath:indexPath];
+	if ([self.calendar mgc_isDate:date sameMonthAsDate:[NSDate date]]) {
+		self.indexPathForCurrentMonth = indexPath;
+	}
 	
 	MGCMonthMiniCalendarView *cal = [MGCMonthMiniCalendarView new];
 	cal.calendar = self.calendar;

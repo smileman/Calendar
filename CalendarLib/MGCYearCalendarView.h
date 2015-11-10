@@ -95,6 +95,17 @@
  */
 @property (nonatomic, assign) CGFloat contentTopInset;
 
+/*!
+	@property	contentHorizontalInset
+	@discussion calendar collection view horizontal inset.
+ */
+@property (nonatomic, assign) CGFloat contentHorizontalInset;
+
+@property (nonatomic, assign) CGFloat minimumInterItemSpacing;
+
+@property (nonatomic, assign) CGFloat minimumInterLineSpacing;
+
+
 
 - (NSDate*)dateForMonthAtPoint:(CGPoint)pt;
 
@@ -110,6 +121,8 @@
 	@warning	If `date` param is not in the scrollable range of dates, an exception is thrown.
  */
 - (void)scrollToDate:(NSDate*)date animated:(BOOL)animated;
+
+- (void)scrollToCurrentMonth;
 
 @end
 
